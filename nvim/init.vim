@@ -50,6 +50,7 @@ Plug 'voldikss/vim-floaterm'
 Plug 'morhetz/gruvbox'
 Plug 'chau-bao-long/semantic-highlight.vim'
 Plug 'terryma/vim-multiple-cursors'
+Plug 'christoomey/vim-tmux-navigator'
 
 if isdirectory('/usr/local/opt/fzf')
   Plug '/usr/local/opt/fzf' | Plug 'junegunn/fzf.vim'
