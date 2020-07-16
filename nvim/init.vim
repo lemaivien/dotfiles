@@ -27,8 +27,8 @@ call plug#begin(expand('~/.config/nvim/plugged'))
 "*****************************************************************************
 "" Plug install packages
 "*****************************************************************************
-Plug 'scrooloose/nerdtree'
-Plug 'jistr/vim-nerdtree-tabs'
+Plug 'preservim/nerdtree'
+Plug 'Xuyuanp/nerdtree-git-plugin'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-fugitive'
 Plug 'vim-airline/vim-airline'
@@ -51,6 +51,11 @@ Plug 'morhetz/gruvbox'
 Plug 'chau-bao-long/semantic-highlight.vim'
 Plug 'terryma/vim-multiple-cursors'
 Plug 'christoomey/vim-tmux-navigator'
+Plug 'udalov/kotlin-vim'
+Plug 'tpope/vim-surround'
+Plug 'kkoomen/vim-doge'
+Plug 'ryanoasis/vim-devicons'
+Plug 'trusktr/seti.vim'
 
 if isdirectory('/usr/local/opt/fzf')
   Plug '/usr/local/opt/fzf' | Plug 'junegunn/fzf.vim'
@@ -69,8 +74,8 @@ Plug 'xolox/vim-misc'
 Plug 'xolox/vim-session'
 
 "" Snippets
-Plug 'SirVer/ultisnips'
-Plug 'honza/vim-snippets'
+"Plug 'SirVer/ultisnips'
+"Plug 'honza/vim-snippets'
 
 
 "*****************************************************************************
@@ -125,7 +130,7 @@ set shiftwidth=4
 set expandtab
 
 "" Map leader to ,
-let mapleader=','
+let mapleader=' '
 
 "" Enable hidden buffers
 set hidden
@@ -307,6 +312,8 @@ set autoread
 "" Split
 noremap <Leader>h :<C-u>split<CR>
 noremap <Leader>v :<C-u>vsplit<CR>
+noremap <Leader>wl :<C-w>L<CR>
+noremap <Leader>wr :<C-w>R<CR>
 
 "" Git
 noremap <Leader>ga :Gwrite<CR>
@@ -338,7 +345,9 @@ noremap <Leader>e :e <C-R>=expand("%:p:h") . "/" <CR>
 "" Opens a tab edit command with the path of the currently edited file filled
 noremap <Leader>te :tabe <C-R>=expand("%:p:h") . "/" <CR>
 
-"" fzf.vim
+"*************************************************************************************************************
+"" fzf configuration
+"*************************************************************************************************************
 set wildmode=list:longest,list:full
 set wildignore+=*.o,*.obj,.git,*.rbc,*.pyc,__pycache__
 let $FZF_DEFAULT_COMMAND =  "find * -path '*/\.*' -prune -o -path 'node_modules/**' -prune -o -path 'target/**' -prune -o -path 'dist/**' -prune -o  -type f -print -o -type l -print 2> /dev/null"
@@ -351,7 +360,7 @@ endif
 
 " ripgrep
 if executable('rg')
-  let $FZF_DEFAULT_COMMAND = 'rg --files --hidden --follow --glob "!.git/*"'
+  let $FZF_DEFAULT_COMMAND = 'rg --files --hidden --follow --no-ignore-vcs  --glob "!.git/*" --glob "!data/*" --glob "!vendor/amphp/*" --glob "!.idea/*"'
   set grepprg=rg\ --vimgrep
   command! -bang -nargs=* Find call fzf#vim#grep('rg --column --line-number --no-heading --fixed-strings --ignore-case --hidden --follow --glob "!.git/*" --color "always" '.shellescape(<q-args>).'| tr -d "\017"', 1, <bang>0)
 endif
@@ -371,17 +380,52 @@ nnoremap <leader>af :RG<CR>
 
 nnoremap <C-p> :Files<CR>
 
+function! FloatingPanelFzf()
+  let fzf_layout_height_factor = get(g:, 'fzf_layout_height_factor', 0.6)
+  let height = float2nr(&lines * l:fzf_layout_height_factor)
+  " let height = float2nr(&lines/2)
+  let fzf_layout_width_factor = get(g:, 'fzf_layout_width_factor', 0.8)
+  let width = float2nr(&columns * l:fzf_layout_width_factor)
+  " let width = float2nr(&columns - (&columns * 2 / 10))
+  " let row = (&lines - height) / 2
+  let row = float2nr(&lines / 4)
+  " let col =(&columns - width) / 2
+  let col = float2nr((&columns - width) / 3)
+  let opts = {
+        \ 'relative': 'editor',
+        \ 'row': row,
+        \ 'col': col,
+        \ 'width': width,
+        \ 'height':height,
+        \ }
+  let buf = nvim_create_buf(v:false, v:true)
+  call setbufvar(buf, 'number', 'no')
+  let win =  nvim_open_win(buf, v:true, opts)
+  " set layout to highlighting the line containing searching keyword
+  " call setwinvar(win, '&winhighlight', 'NormalFloat:Normal')
+  call setwinvar(win, '&number', 0)
+  call setwinvar(win, '&relativenumber', 0)
+endfunction
+
+let g:fzf_layout = { 'window': 'call FloatingPanelFzf()' }
+"***********************************************************************************************************
+" end fzf configuration
+"***********************************************************************************************************
+
 cnoremap <C-P> <C-R>=expand("%:p:h") . "/" <CR>
-nnoremap <silent> <leader>b :Buffers<CR>
+"leader bl to list all openned buffers
+nnoremap <silent> <leader>bl :Buffers<CR>
+"leader bd to delete current buffer
+nnoremap <silent> <leader>bd :bdelete<CR>
 nnoremap <silent> <leader>e :FZF -m<CR>
 "Recovery commands from history through FZF
 nmap <leader>y :History:<CR>
 
 " snippets
-let g:UltiSnipsExpandTrigger="<tab>"
-let g:UltiSnipsJumpForwardTrigger="<tab>"
-let g:UltiSnipsJumpBackwardTrigger="<c-b>"
-let g:UltiSnipsEditSplit="vertical"
+"let g:UltiSnipsExpandTrigger="<tab>"
+"let g:UltiSnipsJumpForwardTrigger="<tab>"
+"let g:UltiSnipsJumpBackwardTrigger="<c-b>"
+"let g:UltiSnipsEditSplit="vertical"
 
 " ale
 let g:ale_linters = {}
@@ -412,10 +456,10 @@ if has('macunix')
 endif
 
 "" Buffer nav
-noremap <leader>z :bp<CR>
+noremap <leader>bp :bp<CR>
 noremap <leader>q :bp<CR>
 noremap <leader>x :bn<CR>
-noremap <leader>w :bn<CR>
+noremap <leader>bn :bn<CR>
 
 "" Close buffer
 noremap <leader>c :bd<CR>
@@ -424,10 +468,10 @@ noremap <leader>c :bd<CR>
 nnoremap <silent> <leader><space> :noh<cr>
 
 "" Switching windows
-noremap <C-j> <C-w>j
-noremap <C-k> <C-w>k
-noremap <C-l> <C-w>l
-noremap <C-h> <C-w>h
+"oremap <C-j> <C-w>j
+"oremap <C-k> <C-w>k
+"oremap <C-l> <C-w>l
+"oremap <C-h> <C-w>h
 
 "" Vmap for maintain Visual Mode after shifting > and <
 vmap < <gv
@@ -511,6 +555,9 @@ else
   let g:airline_symbols.linenr = ''
 endif
 
+"*******************************************************************************
+"coc configuration
+"*******************************************************************************
 " TextEdit might fail if hidden is not set.
 set hidden
 
@@ -530,7 +577,12 @@ set shortmess+=c
 
 " Always show the signcolumn, otherwise it would shift the text each time
 " diagnostics appear/become resolved.
-set signcolumn=yes
+if has("patch-8.1.1564")
+  " Recently vim can merge signcolumn and number column into one
+  set signcolumn=number
+else
+  set signcolumn=yes
+endif
 
 " Use tab for trigger completion with characters ahead and navigate.
 " NOTE: Use command ':verbose imap <tab>' to make sure tab is not mapped by
@@ -540,6 +592,11 @@ inoremap <silent><expr> <TAB>
       \ <SID>check_back_space() ? "\<TAB>" :
       \ coc#refresh()
 inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
+
+" Improve the completion experience
+"inoremap <expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
+"inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
+"inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
 
 function! s:check_back_space() abort
   let col = col('.') - 1
@@ -559,6 +616,7 @@ else
 endif
 
 " Use `[g` and `]g` to navigate diagnostics
+" Use `:CocDiagnostics` to get all diagnostics of current buffer in location list.
 nmap <silent> [g <Plug>(coc-diagnostic-prev)
 nmap <silent> ]g <Plug>(coc-diagnostic-next)
 
@@ -567,11 +625,6 @@ nmap <silent> gd <Plug>(coc-definition)
 nmap <silent> gy <Plug>(coc-type-definition)
 nmap <silent> gi <Plug>(coc-implementation)
 nmap <silent> gr <Plug>(coc-references)
-
-" Improve the completion experience
-inoremap <expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
-inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
-inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
 
 " Use K to show documentation in preview window.
 nnoremap <silent> K :call <SID>show_documentation()<CR>
@@ -588,7 +641,7 @@ endfunction
 autocmd CursorHold * silent call CocActionAsync('highlight')
 
 " Symbol renaming.
-nmap <leader>rn <Plug>(coc-rename)
+nmap <leader>crn <Plug>(coc-rename)
 
 " Formatting selected code.
 xmap <leader>f  <Plug>(coc-format-selected)
@@ -607,7 +660,7 @@ augroup end
 xmap <leader>a  <Plug>(coc-codeaction-selected)
 nmap <leader>a  <Plug>(coc-codeaction-selected)
 
-" Remap keys for applying codeAction to the current line.
+" Remap keys for applying codeAction to the current buffer.
 nmap <leader>ac  <Plug>(coc-codeaction)
 " Apply AutoFix to problem on the current line.
 nmap <leader>qf  <Plug>(coc-fix-current)
@@ -642,40 +695,59 @@ command! -nargs=0 OR   :call     CocAction('runCommand', 'editor.action.organize
 " provide custom statusline: lightline.vim, vim-airline.
 set statusline^=%{coc#status()}%{get(b:,'coc_current_function','')}
 
-" Mappings using CoCList:
+" Mappings for CoCList
 " Show all diagnostics.
-nnoremap <silent> <space>a  :<C-u>CocList diagnostics<cr>
+nnoremap <silent><nowait> <space>a  :<C-u>CocList diagnostics<cr>
 " Manage extensions.
-nnoremap <silent> <space>e  :<C-u>CocList extensions<cr>
+nnoremap <silent><nowait> <space>e  :<C-u>CocList extensions<cr>
 " Show commands.
-nnoremap <silent> <space>c  :<C-u>CocList commands<cr>
+nnoremap <silent><nowait> <space>c  :<C-u>CocList commands<cr>
 " Find symbol of current document.
-nnoremap <silent> <space>o  :<C-u>CocList outline<cr>
+nnoremap <silent><nowait> <space>o  :<C-u>CocList outline<cr>
 " Search workspace symbols.
-nnoremap <silent> <space>s  :<C-u>CocList -I symbols<cr>
+nnoremap <silent><nowait> <space>s  :<C-u>CocList -I symbols<cr>
 " Do default action for next item.
-nnoremap <silent> <space>j  :<C-u>CocNext<CR>
+nnoremap <silent><nowait> <space>j  :<C-u>CocNext<CR>
 " Do default action for previous item.
-nnoremap <silent> <space>k  :<C-u>CocPrev<CR>
+nnoremap <silent><nowait> <space>k  :<C-u>CocPrev<CR>
 " Resume latest coc list.
-nnoremap <silent> <space>p  :<C-u>CocListResume<CR>
+nnoremap <silent><nowait> <space>p  :<C-u>CocListResume<CR>
 
+"********************************************************************************
 "Custom maps
+"********************************************************************************
 nnoremap ; :
 nnoremap : ;
 vnoremap ; :
 vnoremap : ;
 "zz to save the file
 nnoremap zz :w<cr>
-nnoremap <leader>o :FloatermNew<CR>
-nnoremap <leader>lg :FloatermNew lg <CR>
+
+"*******************************************************************************
+"floaterm key mappings
+"*******************************************************************************
+nnoremap <silent> ,tn :FloatermNew<cr>
+nnoremap <silent> ,tt :FloatermToggle!<cr>
+tnoremap <silent> ,tn <C-\><C-n>:FloatermNew<cr>
+tnoremap <silent> ,tk <C-\><C-n>:FloatermNext<cr>
+tnoremap <silent> ,tj <C-\><C-n>:FloatermPrev<cr>
+tnoremap <silent> ,tt <C-\><C-n>:FloatermToggle!<cr>
+tnoremap <silent> ,th <C-\><C-n>:FloatermHide<cr>
 let g:floaterm_autoclose=1
+let g:floaterm_winblend=0
+"********************************************************************************
+"end floaterm mappings
+"********************************************************************************
+
+
 " Jump to start and end of line using the home row keys
 
 map H ^
 map L $
 "jj to escape
 imap jj <ESC>
+imap jk <ESC>
+imap kk <ESC>
 
 "custom command
 command! Vconfig :e ~/.config/nvim/init.vim
@@ -724,3 +796,13 @@ let g:semanticGUIColors = [
 \ '#F0F4C3',
 \ '#FFB74D'
 \ ]
+
+"*****************************************************************************
+"phpunit configuration
+"*****************************************************************************
+nnoremap tt :call php#RunPhpUnitOnContainerOneTest()<CR>
+
+"*****************************************************************************
+"Doge Generate
+"*****************************************************************************
+nnoremap <leader>dg :DogeGenerate<CR>
